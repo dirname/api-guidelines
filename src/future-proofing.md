@@ -1,25 +1,22 @@
-# Future proofing
-
+# 未来适应性
 
 <a id="c-sealed"></a>
-## Sealed traits protect against downstream implementations (C-SEALED)
+## 封闭的特征防止下游实现 (C-SEALED)
 
-Some traits are only meant to be implemented within the crate that defines them.
-In such cases, we can retain the ability to make changes to the trait in a
-non-breaking way by using the sealed trait pattern.
+某些特征（traits）仅应在定义它们的 crate 内部实现。在这种情况下，我们可以通过使用封闭特征模式来保留改变特征的能力，而不引入不兼容更改。
 
 ```rust
-/// This trait is sealed and cannot be implemented for types outside this crate.
+/// 此特征是封闭的，不能在本 crate 之外为类型实现。
 pub trait TheTrait: private::Sealed {
-    // Zero or more methods that the user is allowed to call.
+    // 一个或多个用户可调用的方法。
     fn ...();
 
-    // Zero or more private methods, not allowed for user to call.
+    // 一个或多个私有方法，不允许用户调用。
     #[doc(hidden)]
     fn ...();
 }
 
-// Implement for some types.
+// 为某些类型实现。
 impl TheTrait for usize {
     /* ... */
 }
@@ -27,51 +24,35 @@ impl TheTrait for usize {
 mod private {
     pub trait Sealed {}
 
-    // Implement for those same types, but no others.
+    // 为相同的类型实现，但不为其他类型实现。
     impl Sealed for usize {}
 }
 ```
 
-The empty private `Sealed` supertrait cannot be named by downstream crates, so
-we are guaranteed that implementations of `Sealed` (and therefore `TheTrait`)
-only exist in the current crate. We are free to add methods to `TheTrait` in a
-non-breaking release even though that would ordinarily be a breaking change for
-traits that are not sealed. Also we are free to change the signature of methods
-that are not publicly documented.
+空的私有 `Sealed` 超特征无法被下游 crate 命名，因此我们可以确保 `Sealed`（因此也包括 `TheTrait`）的实现仅存在于当前 crate 中。我们可以在非破坏性的版本中添加方法到 `TheTrait`，即使这通常是对于未封闭特征的破坏性更改。此外，我们可以更改未公开文档的方法的签名。
 
-Note that removing a public method or changing the signature of a public method
-in a sealed trait are still breaking changes.
+请注意，移除公共方法或更改封闭特征中公共方法的签名仍然是破坏性的更改。
 
-To avoid frustrated users trying to implement the trait, it should be documented
-in rustdoc that the trait is sealed and not meant to be implemented outside of
-the current crate.
+为了避免用户尝试实现该特征的挫折，应该在 rustdoc 中记录该特征是封闭的且不应在当前 crate 之外实现。
 
-### Examples
+### 示例
 
 - [`serde_json::value::Index`](https://docs.serde.rs/serde_json/value/trait.Index.html)
 - [`byteorder::ByteOrder`](https://docs.rs/byteorder/1.1.0/byteorder/trait.ByteOrder.html)
 
-
 <a id="c-struct-private"></a>
-## Structs have private fields (C-STRUCT-PRIVATE)
+## 结构体具有私有字段 (C-STRUCT-PRIVATE)
 
-Making a field public is a strong commitment: it pins down a representation
-choice, _and_ prevents the type from providing any validation or maintaining any
-invariants on the contents of the field, since clients can mutate it arbitrarily.
+将字段设为公共是一项强大的承诺：它固定了一种表示选择，并且禁止该类型提供任何验证或维持字段内容的不变量，因为客户端可以随意修改它。
 
-Public fields are most appropriate for `struct` types in the C spirit: compound,
-passive data structures. Otherwise, consider providing getter/setter methods and
-hiding fields instead.
-
+公共字段最适用于 C 精神中的 `struct` 类型：组合的、被动的数据结构。否则，请考虑提供 getter/setter 方法并隐藏字段。
 
 <a id="c-newtype-hide"></a>
-## Newtypes encapsulate implementation details (C-NEWTYPE-HIDE)
+## 新类型封装实现细节 (C-NEWTYPE-HIDE)
 
-A newtype can be used to hide representation details while making precise
-promises to the client.
+新类型可以用于隐藏表示细节，同时向客户端做出精确的承诺。
 
-For example, consider a function `my_transform` that returns a compound iterator
-type.
+例如，考虑一个返回复合迭代器类型的函数 `my_transform`。
 
 ```rust
 use std::iter::{Enumerate, Skip};
@@ -81,9 +62,7 @@ pub fn my_transform<I: Iterator>(input: I) -> Enumerate<Skip<I>> {
 }
 ```
 
-We wish to hide this type from the client, so that the client's view of the
-return type is roughly `Iterator<Item = (usize, T)>`. We can do so using the
-newtype pattern:
+我们希望向客户端隐藏该类型，以使客户端对返回类型的视图大致为 `Iterator<Item = (usize, T)>`。我们可以使用新类型模式来实现：
 
 ```rust
 use std::iter::{Enumerate, Skip};
@@ -103,19 +82,9 @@ pub fn my_transform<I: Iterator>(input: I) -> MyTransformResult<I> {
 }
 ```
 
-Aside from simplifying the signature, this use of newtypes allows us to promise
-less to the client. The client does not know _how_ the result iterator is
-constructed or represented, which means the representation can change in the
-future without breaking client code.
+除了简化签名之外，这种新类型的使用允许我们向客户端承诺更少。客户端不知道结果迭代器是如何构造或表示的，这意味着表示可以在不破坏客户端代码的情况下更改。
 
-Rust 1.26 also introduces the [`impl Trait`][] feature, which is more concise
-than the newtype pattern but with some additional trade offs, namely with `impl
-Trait` you are limited in what you can express.  For example, returning an
-iterator that impls `Debug` or `Clone` or some combination of the other iterator
-extension traits can be problematic.  In summary `impl Trait` as a return type
-is probably great for internal APIs and may even be appropriate for public APIs,
-but probably not in all cases.  See the ["`impl Trait` for returning complex
-types with ease"][impl-trait-2] section of the Edition Guide for more details.
+Rust 1.26 还引入了 [`impl Trait`][] 特性，比新类型模式更为简洁，但有一些额外的权衡，特别是在表达上有限制。例如，返回实现 `Debug` 或 `Clone` 或其他迭代器扩展特征组合的迭代器可能会有问题。总之，对于内部 APIs，`impl Trait` 作为返回类型可能很好，甚至可能适用于公共 APIs，但可能并非所有情况下都合适。详情请参见新版指南中的 ["`impl Trait` for returning complex types with ease"][impl-trait-2] 部分。
 
 [`impl Trait`]: https://github.com/rust-lang/rfcs/blob/master/text/1522-conservative-impl-trait.md
 [impl-trait-2]: https://rust-lang.github.io/edition-guide/rust-2018/trait-system/impl-trait-for-returning-complex-types-with-ease.html
@@ -126,45 +95,36 @@ pub fn my_transform<I: Iterator>(input: I) -> impl Iterator<Item = (usize, I::It
 }
 ```
 
-
 <a id="c-struct-bounds"></a>
-## Data structures do not duplicate derived trait bounds (C-STRUCT-BOUNDS)
+## 数据结构不重复派生特征边界 (C-STRUCT-BOUNDS)
 
-Generic data structures should not use trait bounds that can be derived or do
-not otherwise add semantic value. Each trait in the `derive` attribute will be
-expanded into a separate `impl` block that only applies to generic arguments
-that implement that trait.
+泛型数据结构不应使用可以派生的或其他不增加语义价值的特征边界。`derive` 属性中的每个特征都会被扩展为一个单独的 `impl` 块，只有泛型参数实现该特征时才适用。
 
 ```rust
-// Prefer this:
+// 推荐这样写：
 #[derive(Clone, Debug, PartialEq)]
 struct Good<T> { /* ... */ }
 
-// Over this:
+// 而不是这样：
 #[derive(Clone, Debug, PartialEq)]
 struct Bad<T: Clone + Debug + PartialEq> { /* ... */ }
 ```
 
-Duplicating derived traits as bounds on `Bad` is unnecessary and a
-backwards-compatibiliity hazard. To illustrate this point, consider deriving
-`PartialOrd` on the structures in the previous example:
+在 `Bad` 上重复派生特征作为边界是不必要的，而且是向后兼容性的隐患。要说明这一点，考虑在上一个示例的结构上派生 `PartialOrd`：
 
 ```rust
-// Non-breaking change:
+// 非破坏性更改：
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 struct Good<T> { /* ... */ }
 
-// Breaking change:
+// 破坏性更改：
 #[derive(Clone, Debug, PartialEq, PartialOrd)]
 struct Bad<T: Clone + Debug + PartialEq + PartialOrd> { /* ... */ }
 ```
 
-Generally speaking, adding a trait bound to a data structure is a breaking
-change because every consumer of that structure will need to start satisfying
-the additional bound. Deriving more traits from the standard library using the
-`derive` attribute is not a breaking change.
+一般来说，向数据结构添加特征边界是破坏性更改，因为该结构的每个消费者都需要开始满足额外的边界。使用 `derive` 属性从标准库派生更多特征不是破坏性更改。
 
-The following traits should never be used in bounds on data structures:
+以下特征不应在数据结构的边界中使用：
 
 - `Clone`
 - `PartialEq`
@@ -177,27 +137,21 @@ The following traits should never be used in bounds on data structures:
 - `Deserialize`
 - `DeserializeOwned`
 
-There is a grey area around other non-derivable trait bounds that are not
-strictly required by the structure definition, like `Read` or `Write`. They may
-communicate the intended behavior of the type better in its definition but also
-limits future extensibility. Including semantically useful trait bounds on data
-structures is still less problematic than including derivable traits as bounds.
+对于其他不可派生的特征边界，它们严格来说不是结构定义所必需的，例如 `Read` 或 `Write`，存在一个灰色地带。它们可能更好地在定义中表达了类型的预期行为，但也限制了未来的扩展性。在数据结构上包含语义上有用的特征边界比包含可派生的特征边界的问题要小。
 
-### Exceptions
+### 例外情况
 
-There are three exceptions where trait bounds on structures are required:
+在以下三种情况下，结构体需要特征边界：
 
-1. The data structure refers to an associated type on the trait.
-1. The bound is `?Sized`.
-1. The data structure has a `Drop` impl that requires trait bounds.
-Rust currently requires all trait bounds on the `Drop` impl are also present
-on the data structure.
+1. 数据结构指代特征上的相关类型。
+2. 边界是 `?Sized`。
+3. 数据结构有一个需要特征边界的 `Drop` 实现。 Rust 当前要求 `Drop` 实现上的所有特征边界也应出现在数据结构上。
 
-### Examples from the standard library
+### 标准库中的示例
 
-- [`std::borrow::Cow`] refers to an associated type on the `Borrow` trait.
-- [`std::boxed::Box`] opts out of the implicit `Sized` bound.
-- [`std::io::BufWriter`] requires a trait bound in its `Drop` impl.
+- [`std::borrow::Cow`] 指代 `Borrow` 特征上的相关类型。
+- [`std::boxed::Box`] 放弃了隐式的 `Sized` 边界。
+- [`std::io::BufWriter`] 在其 `Drop` 实现中需要一个特征边界。
 
 [`std::borrow::Cow`]: https://doc.rust-lang.org/std/borrow/enum.Cow.html
 [`std::boxed::Box`]: https://doc.rust-lang.org/std/boxed/struct.Box.html

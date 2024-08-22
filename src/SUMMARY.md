@@ -1,18 +1,18 @@
-# Summary
+# 概要
 
-[About](about.md)
-[Checklist](checklist.md)
+[关于](about.md)  
+[检查表](checklist.md)
 
-- [Naming](naming.md)
-- [Interoperability](interoperability.md)
-- [Macros](macros.md)
-- [Documentation](documentation.md)
-- [Predictability](predictability.md)
-- [Flexibility](flexibility.md)
-- [Type safety](type-safety.md)
-- [Dependability](dependability.md)
-- [Debuggability](debuggability.md)
-- [Future proofing](future-proofing.md)
-- [Necessities](necessities.md)
+- [命名](naming.md)
+- [互操作性](interoperability.md)
+- [宏](macros.md)
+- [文档](documentation.md)
+- [可预测性](predictability.md)
+- [灵活性](flexibility.md)
+- [类型安全](type-safety.md)
+- [可靠性](dependability.md)
+- [可调试性](debuggability.md)
+- [前瞻性](future-proofing.md)
+- [必要性](necessities.md)
 
-[External links](external-links.md)
+[外部链接](external-links.md)

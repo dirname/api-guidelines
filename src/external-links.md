@@ -1,13 +1,13 @@
-# External links
+# 外部链接
 
-- [RFC 199] - Ownership naming conventions
-- [RFC 344] - Naming conventions
-- [RFC 430] - Naming conventions
-- [RFC 505] - Doc conventions
-- [RFC 1574] - Doc conventions
-- [RFC 1687] - Crate-level documentation
-- [Elegant Library APIs in Rust](https://deterministic.space/elegant-apis-in-rust.html)
-- [Rust Design Patterns](https://rust-unofficial.github.io/patterns/)
+- [RFC 199] - 所有权命名约定
+- [RFC 344] - 命名约定
+- [RFC 430] - 命名约定
+- [RFC 505] - 文档约定
+- [RFC 1574] - 文档约定
+- [RFC 1687] - crate 级文档
+- [Rust 中的优雅库 API](https://deterministic.space/elegant-apis-in-rust.html)
+- [Rust 设计模式](https://rust-unofficial.github.io/patterns/)
 
 [RFC 344]: https://github.com/rust-lang/rfcs/blob/master/text/0344-conventions-galore.md
 [RFC 430]: https://github.com/rust-lang/rfcs/blob/master/text/0430-finalizing-naming-conventions.md

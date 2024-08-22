@@ -1,0 +1,358 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>前瞻性 - Rust API Guidelines</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="This is a set of recommendations on how to design and present APIs for the Rust programming language.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="about.html">关于</a></li><li class="chapter-item expanded affix "><a href="checklist.html">检查表</a></li><li class="chapter-item expanded "><a href="naming.html"><strong aria-hidden="true">1.</strong> 命名</a></li><li class="chapter-item expanded "><a href="interoperability.html"><strong aria-hidden="true">2.</strong> 互操作性</a></li><li class="chapter-item expanded "><a href="macros.html"><strong aria-hidden="true">3.</strong> 宏</a></li><li class="chapter-item expanded "><a href="documentation.html"><strong aria-hidden="true">4.</strong> 文档</a></li><li class="chapter-item expanded "><a href="predictability.html"><strong aria-hidden="true">5.</strong> 可预测性</a></li><li class="chapter-item expanded "><a href="flexibility.html"><strong aria-hidden="true">6.</strong> 灵活性</a></li><li class="chapter-item expanded "><a href="type-safety.html"><strong aria-hidden="true">7.</strong> 类型安全</a></li><li class="chapter-item expanded "><a href="dependability.html"><strong aria-hidden="true">8.</strong> 可靠性</a></li><li class="chapter-item expanded "><a href="debuggability.html"><strong aria-hidden="true">9.</strong> 可调试性</a></li><li class="chapter-item expanded "><a href="future-proofing.html" class="active"><strong aria-hidden="true">10.</strong> 前瞻性</a></li><li class="chapter-item expanded "><a href="necessities.html"><strong aria-hidden="true">11.</strong> 必要性</a></li><li class="chapter-item expanded affix "><a href="external-links.html">外部链接</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Rust API Guidelines</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="未来适应性"><a class="header" href="#未来适应性">未来适应性</a></h1>
+<p><a id="c-sealed"></a></p>
+<h2 id="封闭的特征防止下游实现-c-sealed"><a class="header" href="#封闭的特征防止下游实现-c-sealed">封闭的特征防止下游实现 (C-SEALED)</a></h2>
+<p>某些特征（traits）仅应在定义它们的 crate 内部实现。在这种情况下，我们可以通过使用封闭特征模式来保留改变特征的能力，而不引入不兼容更改。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>/// 此特征是封闭的，不能在本 crate 之外为类型实现。
+pub trait TheTrait: private::Sealed {
+    // 一个或多个用户可调用的方法。
+    fn ...();
+
+    // 一个或多个私有方法，不允许用户调用。
+    #[doc(hidden)]
+    fn ...();
+}
+
+// 为某些类型实现。
+impl TheTrait for usize {
+    /* ... */
+}
+
+mod private {
+    pub trait Sealed {}
+
+    // 为相同的类型实现，但不为其他类型实现。
+    impl Sealed for usize {}
+}
+<span class="boring">}</span></code></pre></pre>
+<p>空的私有 <code>Sealed</code> 超特征无法被下游 crate 命名，因此我们可以确保 <code>Sealed</code>（因此也包括 <code>TheTrait</code>）的实现仅存在于当前 crate 中。我们可以在非破坏性的版本中添加方法到 <code>TheTrait</code>，即使这通常是对于未封闭特征的破坏性更改。此外，我们可以更改未公开文档的方法的签名。</p>
+<p>请注意，移除公共方法或更改封闭特征中公共方法的签名仍然是破坏性的更改。</p>
+<p>为了避免用户尝试实现该特征的挫折，应该在 rustdoc 中记录该特征是封闭的且不应在当前 crate 之外实现。</p>
+<h3 id="示例"><a class="header" href="#示例">示例</a></h3>
+<ul>
+<li><a href="https://docs.serde.rs/serde_json/value/trait.Index.html"><code>serde_json::value::Index</code></a></li>
+<li><a href="https://docs.rs/byteorder/1.1.0/byteorder/trait.ByteOrder.html"><code>byteorder::ByteOrder</code></a></li>
+</ul>
+<p><a id="c-struct-private"></a></p>
+<h2 id="结构体具有私有字段-c-struct-private"><a class="header" href="#结构体具有私有字段-c-struct-private">结构体具有私有字段 (C-STRUCT-PRIVATE)</a></h2>
+<p>将字段设为公共是一项强大的承诺：它固定了一种表示选择，并且禁止该类型提供任何验证或维持字段内容的不变量，因为客户端可以随意修改它。</p>
+<p>公共字段最适用于 C 精神中的 <code>struct</code> 类型：组合的、被动的数据结构。否则，请考虑提供 getter/setter 方法并隐藏字段。</p>
+<p><a id="c-newtype-hide"></a></p>
+<h2 id="新类型封装实现细节-c-newtype-hide"><a class="header" href="#新类型封装实现细节-c-newtype-hide">新类型封装实现细节 (C-NEWTYPE-HIDE)</a></h2>
+<p>新类型可以用于隐藏表示细节，同时向客户端做出精确的承诺。</p>
+<p>例如，考虑一个返回复合迭代器类型的函数 <code>my_transform</code>。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use std::iter::{Enumerate, Skip};
+
+pub fn my_transform&lt;I: Iterator&gt;(input: I) -&gt; Enumerate&lt;Skip&lt;I&gt;&gt; {
+    input.skip(3).enumerate()
+}
+<span class="boring">}</span></code></pre></pre>
+<p>我们希望向客户端隐藏该类型，以使客户端对返回类型的视图大致为 <code>Iterator&lt;Item = (usize, T)&gt;</code>。我们可以使用新类型模式来实现：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use std::iter::{Enumerate, Skip};
+
+pub struct MyTransformResult&lt;I&gt;(Enumerate&lt;Skip&lt;I&gt;&gt;);
+
+impl&lt;I: Iterator&gt; Iterator for MyTransformResult&lt;I&gt; {
+    type Item = (usize, I::Item);
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
+        self.0.next()
+    }
+}
+
+pub fn my_transform&lt;I: Iterator&gt;(input: I) -&gt; MyTransformResult&lt;I&gt; {
+    MyTransformResult(input.skip(3).enumerate())
+}
+<span class="boring">}</span></code></pre></pre>
+<p>除了简化签名之外，这种新类型的使用允许我们向客户端承诺更少。客户端不知道结果迭代器是如何构造或表示的，这意味着表示可以在不破坏客户端代码的情况下更改。</p>
+<p>Rust 1.26 还引入了 <a href="https://github.com/rust-lang/rfcs/blob/master/text/1522-conservative-impl-trait.md"><code>impl Trait</code></a> 特性，比新类型模式更为简洁，但有一些额外的权衡，特别是在表达上有限制。例如，返回实现 <code>Debug</code> 或 <code>Clone</code> 或其他迭代器扩展特征组合的迭代器可能会有问题。总之，对于内部 APIs，<code>impl Trait</code> 作为返回类型可能很好，甚至可能适用于公共 APIs，但可能并非所有情况下都合适。详情请参见新版指南中的 <a href="https://rust-lang.github.io/edition-guide/rust-2018/trait-system/impl-trait-for-returning-complex-types-with-ease.html">"<code>impl Trait</code> for returning complex types with ease"</a> 部分。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub fn my_transform&lt;I: Iterator&gt;(input: I) -&gt; impl Iterator&lt;Item = (usize, I::Item)&gt; {
+    input.skip(3).enumerate()
+}
+<span class="boring">}</span></code></pre></pre>
+<p><a id="c-struct-bounds"></a></p>
+<h2 id="数据结构不重复派生特征边界-c-struct-bounds"><a class="header" href="#数据结构不重复派生特征边界-c-struct-bounds">数据结构不重复派生特征边界 (C-STRUCT-BOUNDS)</a></h2>
+<p>泛型数据结构不应使用可以派生的或其他不增加语义价值的特征边界。<code>derive</code> 属性中的每个特征都会被扩展为一个单独的 <code>impl</code> 块，只有泛型参数实现该特征时才适用。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// 推荐这样写：
+#[derive(Clone, Debug, PartialEq)]
+struct Good&lt;T&gt; { /* ... */ }
+
+// 而不是这样：
+#[derive(Clone, Debug, PartialEq)]
+struct Bad&lt;T: Clone + Debug + PartialEq&gt; { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<p>在 <code>Bad</code> 上重复派生特征作为边界是不必要的，而且是向后兼容性的隐患。要说明这一点，考虑在上一个示例的结构上派生 <code>PartialOrd</code>：</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// 非破坏性更改：
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
+struct Good&lt;T&gt; { /* ... */ }
+
+// 破坏性更改：
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
+struct Bad&lt;T: Clone + Debug + PartialEq + PartialOrd&gt; { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<p>一般来说，向数据结构添加特征边界是破坏性更改，因为该结构的每个消费者都需要开始满足额外的边界。使用 <code>derive</code> 属性从标准库派生更多特征不是破坏性更改。</p>
+<p>以下特征不应在数据结构的边界中使用：</p>
+<ul>
+<li><code>Clone</code></li>
+<li><code>PartialEq</code></li>
+<li><code>PartialOrd</code></li>
+<li><code>Debug</code></li>
+<li><code>Display</code></li>
+<li><code>Default</code></li>
+<li><code>Error</code></li>
+<li><code>Serialize</code></li>
+<li><code>Deserialize</code></li>
+<li><code>DeserializeOwned</code></li>
+</ul>
+<p>对于其他不可派生的特征边界，它们严格来说不是结构定义所必需的，例如 <code>Read</code> 或 <code>Write</code>，存在一个灰色地带。它们可能更好地在定义中表达了类型的预期行为，但也限制了未来的扩展性。在数据结构上包含语义上有用的特征边界比包含可派生的特征边界的问题要小。</p>
+<h3 id="例外情况"><a class="header" href="#例外情况">例外情况</a></h3>
+<p>在以下三种情况下，结构体需要特征边界：</p>
+<ol>
+<li>数据结构指代特征上的相关类型。</li>
+<li>边界是 <code>?Sized</code>。</li>
+<li>数据结构有一个需要特征边界的 <code>Drop</code> 实现。 Rust 当前要求 <code>Drop</code> 实现上的所有特征边界也应出现在数据结构上。</li>
+</ol>
+<h3 id="标准库中的示例"><a class="header" href="#标准库中的示例">标准库中的示例</a></h3>
+<ul>
+<li><a href="https://doc.rust-lang.org/std/borrow/enum.Cow.html"><code>std::borrow::Cow</code></a> 指代 <code>Borrow</code> 特征上的相关类型。</li>
+<li><a href="https://doc.rust-lang.org/std/boxed/struct.Box.html"><code>std::boxed::Box</code></a> 放弃了隐式的 <code>Sized</code> 边界。</li>
+<li><a href="https://doc.rust-lang.org/std/io/struct.BufWriter.html"><code>std::io::BufWriter</code></a> 在其 <code>Drop</code> 实现中需要一个特征边界。</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="debuggability.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="necessities.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="debuggability.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="necessities.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

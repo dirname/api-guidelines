@@ -1,0 +1,368 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>灵活性 - Rust API Guidelines</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="This is a set of recommendations on how to design and present APIs for the Rust programming language.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="about.html">关于</a></li><li class="chapter-item expanded affix "><a href="checklist.html">检查表</a></li><li class="chapter-item expanded "><a href="naming.html"><strong aria-hidden="true">1.</strong> 命名</a></li><li class="chapter-item expanded "><a href="interoperability.html"><strong aria-hidden="true">2.</strong> 互操作性</a></li><li class="chapter-item expanded "><a href="macros.html"><strong aria-hidden="true">3.</strong> 宏</a></li><li class="chapter-item expanded "><a href="documentation.html"><strong aria-hidden="true">4.</strong> 文档</a></li><li class="chapter-item expanded "><a href="predictability.html"><strong aria-hidden="true">5.</strong> 可预测性</a></li><li class="chapter-item expanded "><a href="flexibility.html" class="active"><strong aria-hidden="true">6.</strong> 灵活性</a></li><li class="chapter-item expanded "><a href="type-safety.html"><strong aria-hidden="true">7.</strong> 类型安全</a></li><li class="chapter-item expanded "><a href="dependability.html"><strong aria-hidden="true">8.</strong> 可靠性</a></li><li class="chapter-item expanded "><a href="debuggability.html"><strong aria-hidden="true">9.</strong> 可调试性</a></li><li class="chapter-item expanded "><a href="future-proofing.html"><strong aria-hidden="true">10.</strong> 前瞻性</a></li><li class="chapter-item expanded "><a href="necessities.html"><strong aria-hidden="true">11.</strong> 必要性</a></li><li class="chapter-item expanded affix "><a href="external-links.html">外部链接</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Rust API Guidelines</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="灵活性"><a class="header" href="#灵活性">灵活性</a></h1>
+<p><a id="c-intermediate"></a></p>
+<h2 id="函数暴露中间结果以避免重复工作-c-intermediate"><a class="header" href="#函数暴露中间结果以避免重复工作-c-intermediate">函数暴露中间结果以避免重复工作 (C-INTERMEDIATE)</a></h2>
+<p>许多函数在回答问题的同时也计算了相关的有趣数据。如果这些数据对客户端可能有用，应该考虑在 API 中暴露这些数据。</p>
+<h3 id="标准库中的示例"><a class="header" href="#标准库中的示例">标准库中的示例</a></h3>
+<ul>
+<li>
+<p><a href="https://doc.rust-lang.org/std/vec/struct.Vec.html#method.binary_search"><code>Vec::binary_search</code></a> 不返回一个表示是否找到值的 <code>bool</code>，也不返回一个表示可能找到值的索引的 <code>Option&lt;usize&gt;</code>。它返回的是有关索引的信息，如果找到则返回索引，如果没找到则返回插入值所需的索引。</p>
+</li>
+<li>
+<p><a href="https://doc.rust-lang.org/std/string/struct.String.html#method.from_utf8"><code>String::from_utf8</code></a> 如果输入字节不是 UTF-8，则可能会失败。在错误情况下，它返回一个中间结果，该结果显示输入中有效 UTF-8 的字节偏移量，并返还输入字节的所有权。</p>
+</li>
+<li>
+<p><a href="https://doc.rust-lang.org/stable/std/collections/struct.HashMap.html#method.insert"><code>HashMap::insert</code></a> 返回一个 <code>Option&lt;T&gt;</code>，它返回给定键的预存在值，如果有的话。对于用户想要恢复这个值的情况，由插入操作返回它可以避免用户进行第二次哈希表查找。</p>
+</li>
+</ul>
+<p><a id="c-caller-control"></a></p>
+<h2 id="调用者决定复制和放置数据的位置-c-caller-control"><a class="header" href="#调用者决定复制和放置数据的位置-c-caller-control">调用者决定复制和放置数据的位置 (C-CALLER-CONTROL)</a></h2>
+<p>如果函数需要参数的所有权，它应该接收参数的所有权，而不是借用和克隆参数。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// 优先这样：
+fn foo(b: Bar) {
+    /* 直接使用 b 的所有权 */
+}
+
+// 而不是这样：
+fn foo(b: &amp;Bar) {
+    let b = b.clone();
+    /* 克隆后使用 b 的所有权 */
+}
+<span class="boring">}</span></code></pre></pre>
+<p>如果函数<em>不需要</em>参数的所有权，它应该借用参数，而不是获取所有权并丢弃参数。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// 优先这样：
+fn foo(b: &amp;Bar) {
+    /* 借用 b 使用 */
+}
+
+// 而不是这样：
+fn foo(b: Bar) {
+    /* 借用 b 使用，函数返回前会隐式丢弃 */
+}
+<span class="boring">}</span></code></pre></pre>
+<p>只有在绝对需要时才应将 <code>Copy</code> trait 用作约束，而不是作为标记副本应该容易制作的方式。</p>
+<p><a id="c-generic"></a></p>
+<h2 id="函数通过使用泛型来最小化对参数的假设-c-generic"><a class="header" href="#函数通过使用泛型来最小化对参数的假设-c-generic">函数通过使用泛型来最小化对参数的假设 (C-GENERIC)</a></h2>
+<p>函数对其输入做出的假设越少，其可用性就越广。</p>
+<p>优先</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn foo&lt;I: IntoIterator&lt;Item = i64&gt;&gt;(iter: I) { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<p>而不是任何以下实现</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn foo(c: &amp;[i64]) { /* ... */ }
+fn foo(c: &amp;Vec&lt;i64&gt;) { /* ... */ }
+fn foo(c: &amp;SomeOtherCollection&lt;i64&gt;) { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<p>如果函数只需要迭代数据。</p>
+<p>更一般地，考虑使用泛型来准确地点出函数需要对其参数进行的假设。</p>
+<h3 id="泛型的优势"><a class="header" href="#泛型的优势">泛型的优势</a></h3>
+<ul>
+<li>
+<p><em>重用性</em>。泛型函数可以应用于一个开放式的类型集合，同时为这些类型需要提供的功能提供一个清晰的契约。</p>
+</li>
+<li>
+<p><em>静态调度和优化</em>。每次使用泛型函数时，都会专门为实现 trait 约束的特定类型进行“单态化”，这意味着 (1) trait 方法的调用为静态的、直接的实现调用，（2）编译器可以内联和进一步优化这些调用。</p>
+</li>
+<li>
+<p><em>内联布局</em>。如果一个 <code>struct</code> 和 <code>enum</code> 类型是某个类型参数 <code>T</code> 的泛型，<code>T</code> 类型的值将在 <code>struct</code>/<code>enum</code> 中内联布局，而没有任何间接性。</p>
+</li>
+<li>
+<p><em>推断</em>。由于通常可以推断给泛型函数的类型参数，泛型函数可以帮助减少代码中的冗长，通常无需显式转换或其他方法调用。</p>
+</li>
+<li>
+<p><em>精确类型</em>。因为泛型为实现一个 trait 的特定类型提供了一个_名称_，所以可以准确地表示需要或产生该确切类型的地方。例如，一个函数</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn binary&lt;T: Trait&gt;(x: T, y: T) -&gt; T
+<span class="boring">}</span></code></pre></pre>
+<p>可以保证使用和返回完全相同类型 <code>T</code> 的元素；不能用不同类型的参数调用此函数，即使这些类型都实现了 <code>Trait</code>。</p>
+</li>
+</ul>
+<h3 id="泛型的劣势"><a class="header" href="#泛型的劣势">泛型的劣势</a></h3>
+<ul>
+<li>
+<p><em>代码大小</em>。专用的泛型函数意味着函数主体被复制。必须权衡代码大小的增加与静态调度的性能收益之间的关系。</p>
+</li>
+<li>
+<p><em>同质类型</em>。这是“精确类型”问题的另一面：如果 <code>T</code> 是一个类型参数，它代表一个_单一_实际类型。因此，例如，<code>Vec&lt;T&gt;</code> 包含单一具体类型的元素（实际上，矢量表示被专门用于内联这些元素）。有时，异类集合是有用的；见 <a href="#c-object">trait 对象</a>。</p>
+</li>
+<li>
+<p><em>签名冗长</em>。大量使用泛型可能使函数的签名更难以阅读和理解。</p>
+</li>
+</ul>
+<h3 id="标准库中的示例-1"><a class="header" href="#标准库中的示例-1">标准库中的示例</a></h3>
+<ul>
+<li><a href="https://doc.rust-lang.org/std/fs/struct.File.html#method.open"><code>std::fs::File::open</code></a> 接受一个通用类型 <code>AsRef&lt;Path&gt;</code> 的参数。这允许通过字符串字面量 <code>"f.txt"</code>、<a href="https://doc.rust-lang.org/std/path/struct.Path.html"><code>Path</code></a>、<a href="https"><code>OsString</code></a> 和一些其他类型方便地打开文件。</li>
+</ul>
+<p><a id="c-object"></a></p>
+<h2 id="具有潜在用途的-trait-对象是对象安全的-c-object"><a class="header" href="#具有潜在用途的-trait-对象是对象安全的-c-object">具有潜在用途的 trait 对象是对象安全的 (C-OBJECT)</a></h2>
+<p>trait 对象有一些显著的限制：通过 trait 对象调用的方法不能使用泛型，并且不能在接收者位置之外使用 <code>Self</code>。</p>
+<p>设计 trait 时，及早决定是将它用作对象还是用作泛型的约束。</p>
+<p>如果一个 trait 是被用作对象，其方法应该接收和返回 trait 对象而不是使用泛型。</p>
+<p><code>where</code> 子句 <code>Self: Sized</code> 可用于将特定方法从 trait 的对象中排除出去。以下 trait 由于泛型方法而不是对象安全的。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>trait MyTrait {
+    fn object_safe(&amp;self, i: i32);
+
+    fn not_object_safe&lt;T&gt;(&amp;self, t: T);
+}
+<span class="boring">}</span></code></pre></pre>
+<p>为泛型方法添加 <code>Self: Sized</code> 要求，将其从 trait 对象中排除，使 trait 对象安全。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>trait MyTrait {
+    fn object_safe(&amp;self, i: i32);
+
+    fn not_object_safe&lt;T&gt;(&amp;self, t: T) where Self: Sized;
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="trait-对象的优点"><a class="header" href="#trait-对象的优点">trait 对象的优点</a></h3>
+<ul>
+<li><em>异构性</em>。当你需要它时，你真的需要它。</li>
+<li><em>代码大小</em>。与泛型不同，trait 对象不生成专用（单态化）的代码版本，这可以大大减少代码大小。</li>
+</ul>
+<h3 id="trait-对象的缺点"><a class="header" href="#trait-对象的缺点">trait 对象的缺点</a></h3>
+<ul>
+<li><em>无泛型方法</em>。trait 对象目前不能提供泛型方法。</li>
+<li><em>动态调度和胖指针</em>。trait 对象本身涉及间接性和 vtable 调度，这可能带来性能上的代价。</li>
+<li><em>无 Self</em>。除接收者参数以外，trait 对象上的方法不能使用 <code>Self</code> 类型。</li>
+</ul>
+<h3 id="标准库中的示例-2"><a class="header" href="#标准库中的示例-2">标准库中的示例</a></h3>
+<ul>
+<li><a href="https://doc.rust-lang.org/std/io/trait.Read.html"><code>io::Read</code></a> 和 <a href="https://doc.rust-lang.org/std/io/trait.Write.html"><code>io::Write</code></a> trait 经常用作对象。</li>
+<li><a href="https://doc.rust-lang.org/std/iter/trait.Iterator.html"><code>Iterator</code></a> trait 有几个用 <code>where Self: Sized</code> 标记的泛型方法，以保留将 <code>Iterator</code> 用作对象的能力。</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="predictability.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="type-safety.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="predictability.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="type-safety.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

@@ -1,93 +1,68 @@
-# Dependability
-
+# 可靠性
 
 <a id="c-validate"></a>
-## Functions validate their arguments (C-VALIDATE)
+## 函数应验证其参数 (C-VALIDATE)
 
-Rust APIs do _not_ generally follow the [robustness principle]: "be conservative
-in what you send; be liberal in what you accept".
+Rust API 通常**不**遵循[鲁棒性原则]：“对外发送信息时要保守；对接收到的信息要宽容”。
 
-[robustness principle]: http://en.wikipedia.org/wiki/Robustness_principle
+[鲁棒性原则]: http://en.wikipedia.org/wiki/Robustness_principle
 
-Instead, Rust code should _enforce_ the validity of input whenever practical.
+相反，Rust 代码应尽可能地**强制**输入的有效性。
 
-Enforcement can be achieved through the following mechanisms (listed in order of
-preference).
+可以通过以下机制实现强制验证（按优先顺序列出）。
 
-### Static enforcement
+### 静态验证
 
-Choose an argument type that rules out bad inputs.
+选择一种可以排除无效输入的参数类型。
 
-For example, prefer
+例如，优先选择
 
 ```rust
 fn foo(a: Ascii) { /* ... */ }
 ```
 
-over
+而不是
 
 ```rust
 fn foo(a: u8) { /* ... */ }
 ```
 
-where `Ascii` is a _wrapper_ around `u8` that guarantees the highest bit is
-zero; see newtype patterns ([C-NEWTYPE]) for more details on creating typesafe
-wrappers.
+其中 `Ascii` 是 `u8` 的一个**包装类型**，它保证最高位为零；有关创建类型安全包装器的更多细节，请参见 newtype 模式 ([C-NEWTYPE])。
 
-Static enforcement usually comes at little run-time cost: it pushes the costs to
-the boundaries (e.g. when a `u8` is first converted into an `Ascii`). It also
-catches bugs early, during compilation, rather than through run-time failures.
+静态验证通常几乎不带来运行时成本：它将成本推到边界（例如，当 `u8` 首次转换为 `Ascii` 时）。它还可以在编译期间捕获错误，而不是通过运行时失败来发现错误。
 
-On the other hand, some properties are difficult or impossible to express using
-types.
+另一方面，有些属性很难或不可能用类型来表达。
 
 [C-NEWTYPE]: type-safety.html#c-newtype
 
-### Dynamic enforcement
+### 动态验证
 
-Validate the input as it is processed (or ahead of time, if necessary). Dynamic
-checking is often easier to implement than static checking, but has several
-downsides:
+在处理输入时（或在必要时提前）验证输入。动态检查通常比静态检查更容易实现，但也有几个缺点：
 
-1. Runtime overhead (unless checking can be done as part of processing the
-   input).
-2. Delayed detection of bugs.
-3. Introduces failure cases, either via `panic!` or `Result`/`Option` types,
-   which must then be dealt with by client code.
+1. 运行时开销（除非检查可以作为处理输入的一部分完成）。
+2. 错误的检测延迟。
+3. 引入失败情况，无论是通过 `panic!` 还是 `Result`/`Option` 类型，这些都必须由客户端代码处理。
 
-#### Dynamic enforcement with `debug_assert!`
+#### 使用 `debug_assert!` 的动态验证
 
-Same as dynamic enforcement, but with the possibility of easily turning off
-expensive checks for production builds.
+与动态验证相同，但可以轻松地在生产构建中关闭昂贵的检查。
 
-#### Dynamic enforcement with opt-out
+#### 动态验证的选择退出
 
-Same as dynamic enforcement, but adds sibling functions that opt out of the
-checking.
+与动态验证相同，但增加了可以选择退出检查的同类函数。
 
-The convention is to mark these opt-out functions with a suffix like
-`_unchecked` or by placing them in a `raw` submodule.
+惯例是使用类似 `_unchecked` 的后缀标记这些选择退出检查的函数，或者将它们放在 `raw` 子模块中。
 
-The unchecked functions can be used judiciously in cases where (1) performance
-dictates avoiding checks and (2) the client is otherwise confident that the
-inputs are valid.
-
+在以下情况下，可以慎重使用未经检查的函数：(1) 性能要求避免检查，并且 (2) 客户端可以确信输入是有效的。
 
 <a id="c-dtor-fail"></a>
-## Destructors never fail (C-DTOR-FAIL)
+## 析构函数不应失败 (C-DTOR-FAIL)
 
-Destructors are executed while panicking, and in that context a failing
-destructor causes the program to abort.
+析构函数在发生 panic 时执行，在这种情况下，如果析构函数失败会导致程序中止。
 
-Instead of failing in a destructor, provide a separate method for checking for
-clean teardown, e.g. a `close` method, that returns a `Result` to signal
-problems. If that `close` method is not called, the `Drop` implementation
-should do the teardown and ignore or log/trace any errors it produces.
-
+与其让析构函数失败，不如提供一个单独的方法来检查是否正常结束，例如 `close` 方法，该方法返回一个 `Result` 以表示问题。如果未调用该 `close` 方法，则 `Drop` 实现应进行清理，并忽略或记录/跟踪它产生的任何错误。
 
 <a id="c-dtor-block"></a>
-## Destructors that may block have alternatives (C-DTOR-BLOCK)
+## 可能阻塞的析构函数应提供替代方案 (C-DTOR-BLOCK)
 
-Similarly, destructors should not invoke blocking operations, which can make
-debugging much more difficult. Again, consider providing a separate method for
-preparing for an infallible, nonblocking teardown.
+同样，析构函数不应调用阻塞操作，这会使调试更加困难。再次考虑提供一个单独的方法来准备无错误的、非阻塞的清理工作。

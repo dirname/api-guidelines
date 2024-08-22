@@ -1,0 +1,338 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>互操作性 - Rust API Guidelines</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="This is a set of recommendations on how to design and present APIs for the Rust programming language.">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="about.html">关于</a></li><li class="chapter-item expanded affix "><a href="checklist.html">检查表</a></li><li class="chapter-item expanded "><a href="naming.html"><strong aria-hidden="true">1.</strong> 命名</a></li><li class="chapter-item expanded "><a href="interoperability.html" class="active"><strong aria-hidden="true">2.</strong> 互操作性</a></li><li class="chapter-item expanded "><a href="macros.html"><strong aria-hidden="true">3.</strong> 宏</a></li><li class="chapter-item expanded "><a href="documentation.html"><strong aria-hidden="true">4.</strong> 文档</a></li><li class="chapter-item expanded "><a href="predictability.html"><strong aria-hidden="true">5.</strong> 可预测性</a></li><li class="chapter-item expanded "><a href="flexibility.html"><strong aria-hidden="true">6.</strong> 灵活性</a></li><li class="chapter-item expanded "><a href="type-safety.html"><strong aria-hidden="true">7.</strong> 类型安全</a></li><li class="chapter-item expanded "><a href="dependability.html"><strong aria-hidden="true">8.</strong> 可靠性</a></li><li class="chapter-item expanded "><a href="debuggability.html"><strong aria-hidden="true">9.</strong> 可调试性</a></li><li class="chapter-item expanded "><a href="future-proofing.html"><strong aria-hidden="true">10.</strong> 前瞻性</a></li><li class="chapter-item expanded "><a href="necessities.html"><strong aria-hidden="true">11.</strong> 必要性</a></li><li class="chapter-item expanded affix "><a href="external-links.html">外部链接</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Rust API Guidelines</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="互操作性"><a class="header" href="#互操作性">互操作性</a></h1>
+<p><a id="c-common-traits"></a></p>
+<h2 id="类型应尽早实现常见的-traitc-common-traits"><a class="header" href="#类型应尽早实现常见的-traitc-common-traits">类型应尽早实现常见的 trait（C-COMMON-TRAITS）</a></h2>
+<p>Rust 的 trait 系统不允许存在“孤儿”：大致上，每个 <code>impl</code> 必须存在于定义该 trait 的 crate 或实现该类型的 crate 中。因此，定义新类型的 crate 应该尽早实现所有适用的常见 trait。</p>
+<p>为了理解这一点，请考虑以下情况：</p>
+<ul>
+<li>Crate <code>std</code> 定义了 trait <code>Display</code>。</li>
+<li>Crate <code>url</code> 定义了类型 <code>Url</code>，但没有实现 <code>Display</code>。</li>
+<li>Crate <code>webapp</code> 从 <code>std</code> 和 <code>url</code> 中导入了内容。</li>
+</ul>
+<p>由于 <code>webapp</code> 既不定义 <code>Display</code> 也不定义 <code>Url</code>，因此它无法为 <code>Url</code> 添加 <code>Display</code>。 （注意：newtype 模式可以提供一种有效但不便的解决方法。）</p>
+<p>最重要的常见 trait 实现来自 <code>std</code>：</p>
+<ul>
+<li><a href="https://doc.rust-lang.org/std/marker/trait.Copy.html"><code>Copy</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/clone/trait.Clone.html"><code>Clone</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/cmp/trait.Eq.html"><code>Eq</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/cmp/trait.PartialEq.html"><code>PartialEq</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/cmp/trait.Ord.html"><code>Ord</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/cmp/trait.PartialOrd.html"><code>PartialOrd</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/hash/trait.Hash.html"><code>Hash</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/fmt/trait.Debug.html"><code>Debug</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/fmt/trait.Display.html"><code>Display</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/default/trait.Default.html"><code>Default</code></a></li>
+</ul>
+<p>请注意，通常类型同时实现 <code>Default</code> 和空的 <code>new</code> 构造函数是常见且预期的。<code>new</code> 是 Rust 中的构造函数惯例，用户希望它存在，所以如果基本构造函数不需要参数，那么即使它与 <code>default</code> 功能相同，也应该存在。</p>
+<p><a id="c-conv-traits"></a></p>
+<h2 id="转换使用标准的-fromasrefasmut-traitc-conv-traits"><a class="header" href="#转换使用标准的-fromasrefasmut-traitc-conv-traits">转换使用标准的 <code>From</code>、<code>AsRef</code>、<code>AsMut</code> trait（C-CONV-TRAITS）</a></h2>
+<p>在合适的情况下，应该实现以下转换 trait：</p>
+<ul>
+<li><a href="https://doc.rust-lang.org/std/convert/trait.From.html"><code>From</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/convert/trait.TryFrom.html"><code>TryFrom</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/convert/trait.AsRef.html"><code>AsRef</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/convert/trait.AsMut.html"><code>AsMut</code></a></li>
+</ul>
+<p>以下转换 trait 不应被实现：</p>
+<ul>
+<li><a href="https://doc.rust-lang.org/std/convert/trait.Into.html"><code>Into</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/convert/trait.TryInto.html"><code>TryInto</code></a></li>
+</ul>
+<p>这些 trait 基于 <code>From</code> 和 <code>TryFrom</code> 提供了通用实现。应优先实现这些。</p>
+<h3 id="标准库中的示例"><a class="header" href="#标准库中的示例">标准库中的示例</a></h3>
+<ul>
+<li><code>From&lt;u16&gt;</code> 实现了 <code>u32</code>，因为较小的整数总是可以转换为较大的整数。</li>
+<li><code>From&lt;u32&gt;</code> 并未为 <code>u16</code> 实现，因为如果整数太大，转换可能无法完成。</li>
+<li><code>TryFrom&lt;u32&gt;</code> 为 <code>u16</code> 实现，当整数太大而无法容纳在 <code>u16</code> 中时返回错误。</li>
+<li><a href="https://doc.rust-lang.org/std/net/struct.Ipv6Addr.html"><code>From&lt;Ipv6Addr&gt;</code></a> 实现了 <a href="https://doc.rust-lang.org/std/net/enum.IpAddr.html"><code>IpAddr</code></a>，它是一种可以表示 v4 和 v6 IP 地址的类型。</li>
+</ul>
+<p><a id="c-collect"></a></p>
+<h2 id="集合实现-fromiterator-和-extendc-collect"><a class="header" href="#集合实现-fromiterator-和-extendc-collect">集合实现 <code>FromIterator</code> 和 <code>Extend</code>（C-COLLECT）</a></h2>
+<p><a href="https://doc.rust-lang.org/std/iter/trait.FromIterator.html"><code>FromIterator</code></a> 和 <a href="https://doc.rust-lang.org/std/iter/trait.Extend.html"><code>Extend</code></a> 使集合可以方便地与以下迭代器方法一起使用：</p>
+<ul>
+<li><a href="https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.collect"><code>Iterator::collect</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.partition"><code>Iterator::partition</code></a></li>
+<li><a href="https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.unzip"><code>Iterator::unzip</code></a></li>
+</ul>
+<p><code>FromIterator</code> 用于创建一个包含迭代器中项的新集合，而 <code>Extend</code> 则用于将迭代器中的项添加到现有集合中。</p>
+<h3 id="标准库中的示例-1"><a class="header" href="#标准库中的示例-1">标准库中的示例</a></h3>
+<ul>
+<li><a href="https://doc.rust-lang.org/std/vec/struct.Vec.html"><code>Vec&lt;T&gt;</code></a> 实现了 <code>FromIterator&lt;T&gt;</code> 和 <code>Extend&lt;T&gt;</code>。</li>
+</ul>
+<p><a id="c-serde"></a></p>
+<h2 id="数据结构实现-serde-的-serialize-和-deserializec-serde"><a class="header" href="#数据结构实现-serde-的-serialize-和-deserializec-serde">数据结构实现 Serde 的 <code>Serialize</code> 和 <code>Deserialize</code>（C-SERDE）</a></h2>
+<p>扮演数据结构角色的类型应实现 <a href="https://docs.serde.rs/serde/trait.Serialize.html"><code>Serialize</code></a> 和 <a href="https://docs.serde.rs/serde/trait.Deserialize.html"><code>Deserialize</code></a>。</p>
+<p>从数据结构到非数据结构存在一个连续体，其中有一部分是灰色区域。<a href="https://docs.rs/linked-hash-map/0.4.2/linked_hash_map/struct.LinkedHashMap.html"><code>LinkedHashMap</code></a> 和 <a href="https://doc.rust-lang.org/std/net/enum.IpAddr.html"><code>IpAddr</code></a> 是数据结构。有人希望从 JSON 文件中读取 <code>LinkedHashMap</code> 或 <code>IpAddr</code>，或者通过 IPC 将其发送到另一个进程，这是完全合理的。而 <a href="https://docs.rs/byteorder/1.0.0/byteorder/enum.LittleEndian.html"><code>LittleEndian</code></a> 不是数据结构。它是 <code>byteorder</code> crate 使用的一种标记，用于在编译时针对特定字节顺序进行优化，实际上 <code>LittleEndian</code> 的实例在运行时永远不会存在。这些是明确的例子；#rust 或 #serde IRC 频道可以帮助评估更多模棱两可的情况。</p>
+<p>如果一个 crate 没有因为其他原因依赖于 Serde，它可以选择通过 Cargo 配置选项来控制 Serde 的实现。这样，下游库只需要在需要这些实现时支付编译 Serde 的代价。</p>
+<p>为了与其他基于 Serde 的库保持一致，Cargo 配置的名称应为 <code>"serde"</code>。不要使用 <code>serde_impls</code> 或 <code>serde_serialization</code> 等不同的名称。</p>
+<p>在不使用派生的情况下，规范的实现看起来像这样：</p>
+<pre><code class="language-toml">[dependencies]
+serde = { version = "1.0", optional = true }
+</code></pre>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct T { /* ... */ }
+
+#[cfg(feature = "serde")]
+impl Serialize for T { /* ... */ }
+
+#[cfg(feature = "serde")]
+impl&lt;'de&gt; Deserialize&lt;'de&gt; for T { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<p>使用派生时：</p>
+<pre><code class="language-toml">[dependencies]
+serde = { version = "1.0", optional = true, features = ["derive"] }
+</code></pre>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct T { /* ... */ }
+<span class="boring">}</span></code></pre></pre>
+<p><a id="c-send-sync"></a></p>
+<h2 id="类型在可能的情况下实现-send-和-syncc-send-sync"><a class="header" href="#类型在可能的情况下实现-send-和-syncc-send-sync">类型在可能的情况下实现 <code>Send</code> 和 <code>Sync</code>（C-SEND-SYNC）</a></h2>
+<p>当编译器确定合适时，<code>Send</code> 和 <code>Sync</code> 会自动实现。</p>
+<p>在操作原始指针的类型中，要谨慎确保你的类型的 <code>Send</code> 和 <code>Sync</code> 状态准确反映其线程安全特性。类似于以下的测试可以帮助捕捉类型是否实现 <code>Send</code> 或 <code>Sync</code> 的非预期回归。</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[test]
+fn test_send() {
+    fn assert_send&lt;T: Send&gt;() {}
+    assert_send::&lt;MyStrangeType&gt;();
+}
+
+#[test]
+fn test_sync() {
+    fn assert_sync&lt;T: Sync&gt;() {}
+    assert_sync::&lt;MyStrangeType&gt;();
+}
+<span class="boring">}</span></code></pre></pre>
+<p><a id="c-good-err"></a></p>
+<h2 id="错误类型应具有意义且表现良好c-good-err"><a class="header" href="#错误类型应具有意义且表现良好c-good-err">错误类型应具有意义且表现良好（C-GOOD-ERR）</a></h2>
+<p>错误类型是任何 <code>Result&lt;T, E&gt;</code> 中的 <code>E</code> 类型，它由你的 crate 的任何公共函数返回。错误类型应始终实现 <a href="https://doc.rust-lang.org/std/error/trait.Error.html"><code>std::error::Error</code></a> trait，这是错误处理库如 <a href="https://docs.rs/error-chain"><code>error-chain</code></a> 抽象不同错误类型的机制，并且允许错误作为另一个错误的 <a href="https://doc.rust-lang.org/std/error/trait.Error.html#method.source"><code>source()</code></a>。</p>
+<p>此外，错误类型应实现 <a href="https://doc.rust-lang.org/std/marker/trait.Send.html"><code>Send</code></a> 和 <a href="https://doc.rust-lang.org/std/marker/trait.Sync.html"><code>Sync</code></a> trait</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="naming.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="macros.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="naming.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="macros.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

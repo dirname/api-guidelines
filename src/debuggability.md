@@ -1,17 +1,14 @@
-# Debuggability
-
+# 调试能力
 
 <a id="c-debug"></a>
-## All public types implement `Debug` (C-DEBUG)
+## 所有公共类型都实现了 `Debug` （C-DEBUG）
 
-If there are exceptions, they are rare.
-
+如果有例外情况，也应该极为罕见。
 
 <a id="c-debug-nonempty"></a>
-## `Debug` representation is never empty (C-DEBUG-NONEMPTY)
+## `Debug` 的表现形式永远不为空（C-DEBUG-NONEMPTY）
 
-Even for conceptually empty values, the `Debug` representation should never be
-empty.
+即使对于概念上为空的值，`Debug` 的表现形式也不应该是空的。
 
 ```rust
 let empty_str = "";
